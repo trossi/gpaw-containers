@@ -65,20 +65,13 @@ COPY spack.yaml $ENV_DIR/spack.yaml
 COPY spack_repo $ENV_DIR/spack_repo
 
 # --- Create the environment and register the custom recipes ---
-# Mimics the GitLab CI: copy spack.yaml + spack_repo into the env dir, activate it, then
-# `spack config add "repos:[$PWD/spack_repo/extra]"`. The view is created in a later layer.
-RUN . /opt/spack/share/spack/setup-env.sh \
- && mkdir -p "$ENV_DIR" \
- && cp /opt/gpaw_deps_config/spack.yaml "$ENV_DIR/" \
- && cp -r /opt/gpaw_deps_config/spack_repo "$ENV_DIR/" \
- && cd "$ENV_DIR" \
+RUN . $SPACK_DIR/share/spack/setup-env.sh \
  && spack env activate -d "$ENV_DIR" \
- && spack config add "repos:[$PWD/spack_repo/extra]" \
+ && spack config add "repos:[$ENV_DIR/spack_repo/extra]" \
  && spack repo list
 
 # --- Concretize and install (the expensive step) ---
-# spack.yaml has `view: false`, so this layer contains only the install tree (its own blob).
-RUN . /opt/spack/share/spack/setup-env.sh \
+RUN . $SPACK_DIR/share/spack/setup-env.sh \
  && spack env activate -d "$ENV_DIR" \
  && export LOG_DIR="$ENV_DIR/logs" \
  && mkdir -p "$LOG_DIR" \
@@ -89,7 +82,7 @@ RUN . /opt/spack/share/spack/setup-env.sh \
 
 # --- Generate the view in its own layer (separate blob from the install tree) ---
 # The view is just symlinks into the install tree from the previous layer.
-RUN . /opt/spack/share/spack/setup-env.sh \
+RUN . $SPACK_DIR/share/spack/setup-env.sh \
  && spack env activate -d "$ENV_DIR" \
  && spack env view enable "$VIEW_DIR" \
  && spack config add "view:default:link:all" \
