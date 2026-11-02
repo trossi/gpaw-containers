@@ -84,12 +84,9 @@ RUN . $SPACK_DIR/share/spack/setup-env.sh \
  && spack install --log-format=junit --log-file="$LOG_DIR/install.log" --show-log-on-error --fail-fast
 
 # --- Generate the view in its own layer (separate blob from the install tree) ---
-# The view is just symlinks into the install tree from the previous layer.
 RUN . $SPACK_DIR/share/spack/setup-env.sh \
  && spack env activate -d "$ENV_DIR" \
  && spack env view enable "$VIEW_DIR" \
- && spack config add "view:default:link:all" \
- && spack config add "view:default:link_type:symlink" \
  && spack env view regenerate
 
 # --- Write the runtime environment script ---
