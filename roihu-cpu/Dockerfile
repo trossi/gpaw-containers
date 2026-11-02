@@ -57,18 +57,16 @@ RUN dnf install -y \
 # compiler wrappers etc. match the upstream install tree and Spack reuses it instead of rebuilding.
 # The builtin repo is registered at site scope; the custom 'extra' repo (added below at env scope)
 # takes precedence over it.
-RUN set -exo pipefail \
- && cd /opt \
+RUN cd /opt \
  && git clone --depth 1 -b csc/v1.1 https://github.com/CSCfi/spack.git \
  && git clone -b csc/v2026.03 --depth 1 https://github.com/CSCfi/spack-packages.git \
- && . spack/share/spack/setup-env.sh \
+ && . /opt/spack/share/spack/setup-env.sh \
  && spack repo add --scope site /opt/spack-packages/repos/spack_repo/builtin
 
 # --- Create the environment and register the custom recipes ---
 # Mimics the GitLab CI: copy spack.yaml + spack_repo into the env dir, activate it, then
 # `spack config add "repos:[$PWD/spack_repo/extra]"`. The view is created in a later layer.
-RUN set -exo pipefail \
- && . /opt/spack/share/spack/setup-env.sh \
+RUN . /opt/spack/share/spack/setup-env.sh \
  && mkdir -p "$ENV_DIR" \
  && cp /opt/gpaw_deps_config/spack.yaml "$ENV_DIR/" \
  && cp -r /opt/gpaw_deps_config/spack_repo "$ENV_DIR/" \
@@ -79,8 +77,7 @@ RUN set -exo pipefail \
 
 # --- Concretize and install (the expensive step) ---
 # spack.yaml has `view: false`, so this layer contains only the install tree (its own blob).
-RUN set -exo pipefail \
- && . /opt/spack/share/spack/setup-env.sh \
+RUN . /opt/spack/share/spack/setup-env.sh \
  && spack env activate -d "$ENV_DIR" \
  && export LOG_DIR="$ENV_DIR/logs" \
  && mkdir -p "$LOG_DIR" \
@@ -91,8 +88,7 @@ RUN set -exo pipefail \
 
 # --- Generate the view in its own layer (separate blob from the install tree) ---
 # The view is just symlinks into the install tree from the previous layer.
-RUN set -exo pipefail \
- && . /opt/spack/share/spack/setup-env.sh \
+RUN . /opt/spack/share/spack/setup-env.sh \
  && spack env activate -d "$ENV_DIR" \
  && spack env view enable "$VIEW_DIR" \
  && spack config add "view:default:link:all" \
@@ -101,8 +97,7 @@ RUN set -exo pipefail \
 
 # --- Write the runtime environment script ---
 # We want to avoid loading the spack env directly (slow!). Instead, set relevant vars to point to the spack view.
-RUN set -ex; \
-    ENV_SCRIPT=/opt/gpaw_deps_env.sh; \
+RUN ENV_SCRIPT=/opt/gpaw_deps_env.sh; \
     echo '# Activate module environment and load default modules' > $ENV_SCRIPT; \
     echo '. /opt/activate.sh' >> $ENV_SCRIPT; \
     echo "export _SPACK_GPAW_VIEW_DIR=${VIEW_DIR}" >> $ENV_SCRIPT; \
@@ -115,8 +110,7 @@ RUN set -ex; \
     echo "export PYTHONPATH=${VIEW_DIR}/lib/python3.14/site-packages:\$PYTHONPATH" >> $ENV_SCRIPT
 
 # --- Tykky setup: symlink just the executables that we'll wrap with tykky into a separate location ---
-RUN set -ex; \
-    TYKKY_BIN_PATTERNS="ase gpaw* python* pytest dftd3 dftd4"; \
+RUN TYKKY_BIN_PATTERNS="ase gpaw* python* pytest dftd3 dftd4"; \
     TYKKY_BIN_DIR=/opt/tykky_wrap/bin; \
     mkdir -p "$TYKKY_BIN_DIR"; \
     set -f; \
@@ -128,8 +122,8 @@ RUN set -ex; \
     set +f; \
     ls "$TYKKY_BIN_DIR"
 
-# Record build info in the image (passed from CI as a build-arg; \n sequences expanded by printf %b).
-ARG BUILD_INFO
+# Record build info in the image
+ARG BUILD_INFO="test"
 RUN printf '%b\n' "$BUILD_INFO" > /opt/build-info.txt
 
 # Mirror the Apptainer %environment + %runscript via an entrypoint wrapper.

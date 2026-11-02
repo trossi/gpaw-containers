@@ -15,14 +15,14 @@ spack:
   - netlib-scalapack@2.2.2/stnq2q
 
   # Python with tkinter
-  - python@3.14.5 ^tk+xft+xss
+  - python@3.14 ^tk+xft+xss
 
   # Other packages
-  - py-gpaw@25.7.0 ^py-ase@3.25.0 ^py-numpy@2.4.5 ^py-scipy@1.17.1 ^python@3.14.5 ^elpa@2024.05.001
+  - py-gpaw@25.7.0 ^py-ase@3.25.0 ^py-numpy@2.4 ^py-scipy@1.17 ^python@3.14 ^elpa@2024.05.001
   - dftd3-lib@0.10
-  - dftd4@3.7.0 ^python@3.14.5
-  - py-pytest@9.0.2
-  - py-matplotlib@3.10.8
+  - dftd4@3.7.0 ^python@3.14
+  - py-pytest@9.0
+  - py-matplotlib@3.10
 # - py-pybind11@3.0.4
 
   # No auto-generated view here: `spack install` would materialize it into the same image
