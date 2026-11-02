@@ -21,8 +21,6 @@ spack:
   - py-gpaw@25.7.0 ^py-ase@3.25.0 ^py-numpy@2.4 ^py-scipy@1.17 ^python@3.14 ^elpa@2024.05.001
   - dftd3-lib@0.10
   - dftd4@3.7.0 ^python@3.14
-  - py-pytest@9.0
-  - py-matplotlib@3.10
 # - py-pybind11@3.0.4
 
   # No auto-generated view here. Generated in Dockerfile instead
