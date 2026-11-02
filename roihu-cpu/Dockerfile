@@ -80,13 +80,12 @@ RUN . $SPACK_DIR/share/spack/setup-env.sh \
  && spack install --log-format=junit --log-file="$LOG_DIR/install.log" --show-log-on-error --fail-fast
 
 # --- Generate the view in its own layer (separate blob from the install tree) ---
-# `copy` makes a self-contained view of real files (not symlinks into the install tree),
-# so this layer can later be peeled off into its own image layer. We copy every installed
-# spec in the environment (by hash); -i tolerates file collisions, --dependencies true pulls
-# in each spec's deps. External packages are skipped automatically.
 RUN . $SPACK_DIR/share/spack/setup-env.sh \
  && spack env activate -d "$ENV_DIR" \
- && spack view --dependencies true copy -i "$VIEW_DIR" $(spack find --format '/{hash}')
+ && spack view --dependencies false copy -i "$VIEW_DIR" \
+      $(spack find --format '/{hash} {prefix}' | grep ' /container' | cut -d' ' -f1) \
+ && find -L "$VIEW_DIR" -type f -name '*.a' -delete -print \
+ && find -L "$VIEW_DIR" -xtype l -name '*.a' -delete -print
 
 # --- Write the runtime environment script ---
 # We want to avoid loading the spack env directly (slow!). Instead, set relevant vars to point to the spack view.
