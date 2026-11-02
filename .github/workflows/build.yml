@@ -1,0 +1,96 @@
+name: Build and push container images
+
+# Build and push the GPAW container images on every push to any branch and on tags.
+#
+# The CPU and GPU builds are two separate, single-architecture images,
+# each built natively on its own runner (no QEMU):
+# - gpaw-roihu-cpu -> linux/amd64 on ubuntu-24.04      (targets x86_64 / AMD Zen5)
+# - gpaw-roihu-gpu -> linux/arm64 on ubuntu-24.04-arm  (targets aarch64 / NVIDIA Grace)
+#
+# Image tags:
+# - branch pushes -> :<branch>
+# - semver tag vX.Y.Z -> :X.Y.Z and :latest (skips pre-releases)
+on:
+  push:
+    branches:
+      - '**'
+    tags:
+      - '**'
+
+env:
+  REGISTRY: ghcr.io
+
+jobs:
+  build:
+    name: Build ${{ matrix.image.name }}
+    runs-on: ${{ matrix.image.runner }}
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        image:
+          - name: gpaw-roihu-cpu
+            runner: ubuntu-24.04
+            platform: linux/amd64
+            context: roihu-cpu
+            dockerfile: roihu-cpu/Dockerfile
+          - name: gpaw-roihu-gpu
+            runner: ubuntu-24.04-arm
+            platform: linux/arm64
+            context: roihu-gpu
+            dockerfile: roihu-gpu/Dockerfile
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0  # full history + tags, needed for git describe
+
+      - name: Extract image metadata (tags, version)
+        id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ matrix.image.name }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=ref,event=branch
+          flavor: |
+            latest=auto
+
+      - name: Assemble build info
+        id: info
+        run: |
+          build_info=$(git show -s --format="BuildDate: $(date -u -Iseconds)\nCommit: %H\nAuthor: %an <%ae>\nAuthorDate: %aI\nSubject: %s")
+          # Collapse to a single line with literal \n so it survives as a build-arg;
+          # the Dockerfile expands it back to newlines with `printf '%b'`.
+          build_info="${build_info//$'\n'/\\n}"
+          echo "build_info=${build_info}" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v4
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v7
+        with:
+          context: ${{ matrix.image.context }}
+          file: ${{ matrix.image.dockerfile }}
+          platforms: ${{ matrix.image.platform }}
+          provenance: false
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            BUILD_INFO=${{ steps.info.outputs.build_info }}
+          # Inline cache carried by the published images themselves
+          cache-from: |
+            type=registry,ref=${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ matrix.image.name }}:main
+            type=registry,ref=${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ matrix.image.name }}:${{ steps.meta.outputs.version }}
+          cache-to: type=inline

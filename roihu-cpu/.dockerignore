@@ -1,0 +1,7 @@
+# Keep editor/VCS artifacts out of the build context (and thus out of the image).
+**/*~
+**/*.swp
+**/*.swo
+**/.*.swp
+**/.git
+**/.gitignore

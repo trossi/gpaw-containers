@@ -1,0 +1,156 @@
+spack:
+  upstreams:
+    gcc15_core:
+      install_tree: /appl/soft/spack/core/v2026_03/x86_64/gcc152_ec/install_dir/
+
+  modules:
+    default:
+      enable: []
+
+  specs:
+  # Core libraries
+  - openblas@0.3.30/qskucw
+  - openmpi@5.0.10/jtu4ml
+  - fftw@3.3.10/gafrwz
+  - netlib-scalapack@2.2.2/stnq2q
+
+  # Python with tkinter
+  - python@3.14.5 ^tk+xft+xss
+
+  # Other packages
+  - py-gpaw@25.7.0 ^py-ase@3.25.0 ^py-numpy@2.4.5 ^py-scipy@1.17.1 ^python@3.14.5 ^elpa@2024.05.001
+  - dftd3-lib@0.10
+  - dftd4@3.7.0 ^python@3.14.5
+  - py-pytest@9.0.2
+  - py-matplotlib@3.10.8
+# - py-pybind11@3.0.4
+
+  # No auto-generated view here: `spack install` would materialize it into the same image
+  # layer as the install tree. Instead the Dockerfile creates the view in a separate layer
+  # (`spack env view enable $VIEW_DIR && spack env view regenerate`), keeping the install tree
+  # and the view as separate blobs. Works because `duplicates:strategy:none` keeps a single
+  # package version per environment.
+  view: false
+
+  concretizer:
+    reuse: true
+    unify: when_possible
+    duplicates:
+      strategy: none
+#     strategy: minimal
+    targets:
+      # Build for zen5 even when the build host is not zen5 (e.g. a CI runner).
+      host_compatible: false
+
+  packages:
+    all:
+      prefer:
+      - "%gcc@15.2.0"
+      - 'target=zen5'
+      - '+openmp'
+
+    py-gpaw:
+      require:
+      - "+elpa+fftw+libvdwxc+mpi+openmp+scalapack"
+
+    dftd4:
+      require:
+      - "+python"
+
+    python:
+      require:
+      - "+tkinter"
+
+    gcc:
+      buildable: false
+      externals:
+      - spec: gcc@15.2.0+binutils languages=c,c++,fortran,jit
+        prefix: /appl/soft/spack/core/v2026_03/x86_64/compilers_ec/install_dir/zen5/gcc-14.1.0/gcc-15.2.0-cxeacg
+        extra_attributes:
+          compilers:
+            c: /appl/soft/spack/core/v2026_03/x86_64/compilers_ec/install_dir/zen5/gcc-14.1.0/gcc-15.2.0-cxeacg/bin/gcc
+            cxx: /appl/soft/spack/core/v2026_03/x86_64/compilers_ec/install_dir/zen5/gcc-14.1.0/gcc-15.2.0-cxeacg/bin/g++
+            fortran: /appl/soft/spack/core/v2026_03/x86_64/compilers_ec/install_dir/zen5/gcc-14.1.0/gcc-15.2.0-cxeacg/bin/gfortran
+
+    knem:
+      buildable: false
+      externals:
+      - spec: knem@1.1.4 %c=gcc@15.2.0
+        prefix: /opt/knem-1.1.4.90mlnx4
+
+    mpi:
+      buildable: false
+    openmpi:
+      buildable: false
+#     require:
+#     - openmpi@5.0.10/jtu4ml
+      externals:
+      - spec: openmpi@5.0.10
+        prefix: /appl/soft/spack/core/v2026_03/x86_64/gcc152_ec/install_dir/zen5/gcc-15.2.0/openmpi@5.0.10-jtu4ml
+
+    blas:
+      buildable: false
+    lapack:
+      buildable: false
+    openblas:
+      buildable: false
+      require:
+      - openblas@0.3.30/qskucw
+#     externals:
+#     - spec: openblas@0.3.30
+#       prefix: /appl/soft/spack/core/v2026_03/x86_64/gcc152_ec/install_dir/zen5/gcc-15.2.0/openblas@0.3.30-qskucw
+
+    scalapack:
+      buildable: false
+    netlib-scalapack:
+      buildable: false
+#     require:
+#     - netlib-scalapack@2.2.2/stnq2q
+      externals:
+      - spec: netlib-scalapack@2.2.2
+        prefix: /appl/soft/spack/core/v2026_03/x86_64/gcc152_ec/install_dir/zen5/gcc-15.2.0/netlib-scalapack@2.2.2-stnq2q
+
+    fftw-api:
+      buildable: false
+    fftw:
+      buildable: false
+#     require:
+#     - fftw@3.3.10/gafrwz
+      externals:
+      - spec: fftw@3.3.10
+        prefix: /appl/soft/spack/core/v2026_03/x86_64/gcc152_ec/install_dir/zen5/gcc-15.2.0/fftw@3.3.10-gafrwz
+
+    libxcb:
+      buildable: false
+      externals:
+      - spec: libxcb@1.13.1
+        prefix: /usr
+
+    libxft:
+      buildable: false
+      externals:
+      - spec: libxft@2.3.3
+        prefix: /usr
+
+    libxscrnsaver:
+      buildable: false
+      externals:
+      - spec: libxscrnsaver@1.2.3
+        prefix: /usr
+
+    libx11:
+      buildable: false
+      externals:
+      - spec: libx11@1.7.0
+        prefix: /usr
+
+    intel-oneapi-mkl:
+      buildable: false
+    armpl-gcc:
+      buildable: false
+    amdblis:
+      buildable: false
+    amdfftw:
+      buildable: false
+    amdlibflame:
+      buildable: false
