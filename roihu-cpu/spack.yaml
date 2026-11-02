@@ -18,8 +18,8 @@ spack:
   - python@3.14 +tkinter ^tk+xft+xss
 
   # Other packages
+  - py-numpy@2.4
   - py-scipy@1.17
-    py-numpy@2.4
   - elpa@2024.05.001
   - dftd3-lib@0.10
   - dftd4@3.7.0 +python
