@@ -16,7 +16,6 @@
 FROM satama.csc.fi/r_installation_spack/core-cpu-gcc-15.2.0:v2026_03
 
 # --- OS prerequisites ---
-# GPAW build kinda assumes 'which' to be available so we install it, too.
 RUN dnf install -y \
         epel-release \
  && dnf install -y \
@@ -33,13 +32,17 @@ RUN dnf install -y \
         zstd \
         gdb \
         which \
+        tcl \
+        tcl-devel \
+        tk \
+        tk-devel \
  && dnf clean all \
  && rm -rf /var/cache/dnf
 
 
 # Where the Spack view will be created. Keep in sync with the view root in spack.yaml.
 ARG VIEW_DIR=/container/gpaw
-ARG ENV_DIR=/container/gpaw_env
+ARG ENV_DIR=/container/gpaw-env
 ARG SPACK_DIR=/container/spack
 ARG SPACK_PACKAGES_DIR=/container/spack-packages
 

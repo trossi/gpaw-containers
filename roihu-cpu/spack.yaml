@@ -140,6 +140,22 @@ spack:
       - spec: libx11@1.7.0
         prefix: /usr
 
+    git:
+      buildable: false
+      externals:
+      - spec: git@2.52.0
+        prefix: /usr
+    tcl:
+      buildable: false
+      externals:
+      - spec: tcl@8.6.10
+        prefix: /usr
+    tk:
+      buildable: false
+      externals:
+      - spec: tk@8.6.10+xft+xss
+        prefix: /usr
+
     intel-oneapi-mkl:
       buildable: false
     armpl-gcc:
