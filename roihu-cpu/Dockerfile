@@ -15,22 +15,6 @@
 # (the env state itself is persisted to disk by `spack env activate` / `spack config add`).
 FROM satama.csc.fi/r_installation_spack/core-cpu-gcc-15.2.0:v2026_03
 
-# Spack env setup scripts require bash.
-SHELL ["/bin/bash", "-c"]
-
-# Where the Spack view will be created. Keep in sync with the view root in spack.yaml.
-ARG VIEW_DIR=/opt/gpaw_container
-ENV VIEW_DIR=${VIEW_DIR}
-# Location of the directory-based Spack environment built below.
-ENV ENV_DIR=/opt/environments/gpaw_deps
-
-# Container is rocky9 but we treat it as rhel9: lets Spack do a better job at reusing upstream packages.
-# OK because these are ABI compatible.
-COPY rhel9-os-release /etc/os-release
-# Spack config (package set + view) and the modified recipes, copied into the image.
-COPY spack.yaml /opt/gpaw_deps_config/spack.yaml
-COPY spack_repo /opt/gpaw_deps_config/spack_repo
-
 # --- OS prerequisites ---
 # GPAW build kinda assumes 'which' to be available so we install it, too.
 RUN dnf install -y \
@@ -52,16 +36,33 @@ RUN dnf install -y \
  && dnf clean all \
  && rm -rf /var/cache/dnf
 
+
+# Where the Spack view will be created. Keep in sync with the view root in spack.yaml.
+ARG VIEW_DIR=/container/gpaw
+ARG ENV_DIR=/container/gpaw_env
+ARG SPACK_DIR=/container/spack
+ARG SPACK_PACKAGES_DIR=/container/spack-packages
+
+# Container is rocky9 but we treat it as rhel9: lets Spack do a better job at reusing upstream packages.
+# OK because these are ABI compatible.
+COPY rhel9-os-release /etc/os-release
+
 # --- Spack + builtin packages ---
-# Use the same version of spack / spack-packages as used when the Roihu stack was built, so the
-# compiler wrappers etc. match the upstream install tree and Spack reuses it instead of rebuilding.
-# The builtin repo is registered at site scope; the custom 'extra' repo (added below at env scope)
-# takes precedence over it.
-RUN cd /opt \
- && git clone --depth 1 -b csc/v1.1 https://github.com/CSCfi/spack.git \
- && git clone -b csc/v2026.03 --depth 1 https://github.com/CSCfi/spack-packages.git \
- && . /opt/spack/share/spack/setup-env.sh \
- && spack repo add --scope site /opt/spack-packages/repos/spack_repo/builtin
+# Use the same version of spack / spack-packages as in Roihu.
+RUN git clone --depth 1 -b csc/v1.1 https://github.com/CSCfi/spack.git $SPACK_DIR \
+ && git clone -b csc/v2026.03 --depth 1 https://github.com/CSCfi/spack-packages.git $SPACK_PACKAGES_DIR \
+ && . $SPACK_DIR/share/spack/setup-env.sh \
+ && spack repo add --scope site $SPACK_PACKAGES_DIR/repos/spack_repo/builtin
+
+# Spack env setup scripts require bash.
+#SHELL ["/bin/bash", "-c"]
+
+
+
+# Spack config (package set + view) and the modified recipes, copied into the image.
+RUN mkdir -p $ENV_DIR
+COPY spack.yaml $ENV_DIR/spack.yaml
+COPY spack_repo $ENV_DIR/spack_repo
 
 # --- Create the environment and register the custom recipes ---
 # Mimics the GitLab CI: copy spack.yaml + spack_repo into the env dir, activate it, then

@@ -25,11 +25,7 @@ spack:
   - py-matplotlib@3.10
 # - py-pybind11@3.0.4
 
-  # No auto-generated view here: `spack install` would materialize it into the same image
-  # layer as the install tree. Instead the Dockerfile creates the view in a separate layer
-  # (`spack env view enable $VIEW_DIR && spack env view regenerate`), keeping the install tree
-  # and the view as separate blobs. Works because `duplicates:strategy:none` keeps a single
-  # package version per environment.
+  # No auto-generated view here. Generated in Dockerfile instead
   view: false
 
   concretizer:
