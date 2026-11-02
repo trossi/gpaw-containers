@@ -56,7 +56,6 @@ RUN git clone --depth 1 -b csc/v1.1 https://github.com/CSCfi/spack.git $SPACK_DI
  && git clone -b csc/v2026.03 --depth 1 https://github.com/CSCfi/spack-packages.git $SPACK_PACKAGES_DIR \
  && . $SPACK_DIR/share/spack/setup-env.sh \
  && spack repo add --scope site $SPACK_PACKAGES_DIR/repos/spack_repo/builtin
-ENV PATH=$SPACK_DIR/bin:$PATH
 
 
 # Spack config (package set + view) and the modified recipes, copied into the image.
@@ -65,12 +64,14 @@ COPY spack.yaml $ENV_DIR/spack.yaml
 COPY spack_repo $ENV_DIR/spack_repo
 
 # --- Create the environment and register the custom recipes ---
-RUN spack env activate -d "$ENV_DIR" \
+RUN . $SPACK_DIR/share/spack/setup-env.sh \
+ && spack env activate -d "$ENV_DIR" \
  && spack config add "repos:[$ENV_DIR/spack_repo/extra]" \
  && spack repo list
 
 # --- Concretize and install (the expensive step) ---
-RUN spack env activate -d "$ENV_DIR" \
+RUN . $SPACK_DIR/share/spack/setup-env.sh \
+ && spack env activate -d "$ENV_DIR" \
  && export LOG_DIR="$ENV_DIR/logs" \
  && mkdir -p "$LOG_DIR" \
  && spack concretize -f 2>&1 | tee "$LOG_DIR/spack-concretize.log" \
@@ -83,7 +84,8 @@ RUN spack env activate -d "$ENV_DIR" \
 # so this layer can later be peeled off into its own image layer. We copy every installed
 # spec in the environment (by hash); -i tolerates file collisions, --dependencies true pulls
 # in each spec's deps. External packages are skipped automatically.
-RUN spack env activate -d "$ENV_DIR" \
+RUN . $SPACK_DIR/share/spack/setup-env.sh \
+ && spack env activate -d "$ENV_DIR" \
  && spack view --dependencies true copy -i "$VIEW_DIR" $(spack find --format '/{hash}')
 
 # --- Write the runtime environment script ---
